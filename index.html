@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Colloscope PTSI 2025-2026</title>
+
+<link rel="icon" type="image/png" href="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/ac65f013-2f3a-4df5-aaeb-568095dc0e48.png">
+    <link rel="apple-touch-icon" href="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/ac65f013-2f3a-4df5-aaeb-568095dc0e48.png">
+    <meta name="theme-color" content="#2563eb">
+
+
+<style>
+:root {
+--primary: #2563eb;
+--bg: #f8fafc;
+--card-bg: #ffffff;
+--text: #1e293b;
+}
+body {
+font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+background-color: var(--bg);
+color: var(--text);
+margin: 0;
+padding: 20px;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+.container {
+max-width: 800px;
+width: 100%;
+}
+h1 { color: var(--primary); text-align: center; margin-bottom: 2rem; }
+
+.controls {
+background: var(--card-bg);
+padding: 1.5rem;
+border-radius: 12px;
+box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1rem;
+margin-bottom: 2rem;
+}
+.input-group { display: flex; flex-direction: column; }
+label { font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; }
+select, input {
+padding: 0.5rem;
+border: 1px solid #cbd5e1;
+border-radius: 6px;
+font-size: 1rem;
+}
+
+.ds-card {
+background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+color: white;
+padding: 1.5rem;
+border-radius: 12px;
+margin-bottom: 2rem;
+text-align: center;
+box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+}
+.ds-title { font-size: 0.9rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+.ds-subject { font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
+
+.colles-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 1rem;
+}
+.colle-card {
+background: var(--card-bg);
+border-radius: 10px;
+padding: 1.25rem;
+box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+border-left: 5px solid var(--primary);
+transition: transform 0.2s;
+}
+.colle-card:hover { transform: translateY(-2px); }
+.subject { font-weight: bold; color: var(--primary); font-size: 1.1rem; display: flex; justify-content: space-between; }
+.prof { color: #64748b; font-size: 0.9rem; margin-top: 0.2rem; }
+.details { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; }
+.tag {
+background: #e2e8f0;
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 0.85rem;
+font-weight: 500;
+}
+.room { background: #dbeafe; color: #1e40af; }
+.time { background: #fef3c7; color: #92400e; }
+.empty-state { text-align: center; grid-column: 1 / -1; color: #94a3b8; padding: 2rem; }
+
+@media (max-width: 600px) {
+.controls { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>📅 Mon Colloscope PTSI</h1>
+
+<div class="controls">
+<div class="input-group">
+            <label for="groupSelect">Mon Groupe (1-16)</label>
+            <select id="groupSelect" onchange="updateDashboard()"></select>
+</div>
+<div class="input-group">
+<label for="weekSelect">Semaine</label>
+<select id="weekSelect" onchange="updateDashboard()"></select>
+</div>
+</div>
+
+<div id="dsContainer" class="ds-card">
+<div class="ds-title">DS du Vendredi</div>
+<div class="ds-subject" id="dsSubject">--</div>
+</div>
+
+<div id="collesContainer" class="colles-grid">
+</div>
+</div>
+
+<script>
+// Dates des lundis de chaque semaine (première colle : 22 septembre 2025)
+const weeks = [
+{ date: "2025-09-22", label: "Semaine 1" },
+{ date: "2025-09-29", label: "Semaine 2" },
+{ date: "2025-10-06", label: "Semaine 3" },
+{ date: "2025-10-13", label: "Semaine 4" },
+{ date: "2025-11-03", label: "Semaine 5" },
+{ date: "2025-11-10", label: "Semaine 6" },
+{ date: "2025-11-17", label: "Semaine 7" },
+{ date: "2025-11-24", label: "Semaine 8" },
+{ date: "2025-12-01", label: "Semaine 9" },
+{ date: "2025-12-08", label: "Semaine 10" },
+{ date: "2025-12-15", label: "Semaine 11" },
+{ date: "2026-01-05", label: "Semaine 12" },
+{ date: "2026-01-12", label: "Semaine 13" },
+{ date: "2026-01-19", label: "Semaine 14" },
+{ date: "2026-01-26", label: "Semaine 15" },
+{ date: "2026-02-02", label: "Semaine 16" },
+{ date: "2026-02-09", label: "Semaine 17" },
+{ date: "2026-02-16", label: "Semaine 18" },
+{ date: "2026-03-09", label: "Semaine 19" },
+{ date: "2026-03-16", label: "Semaine 20" },
+{ date: "2026-03-23", label: "Semaine 21" },
+{ date: "2026-03-30", label: "Semaine 22" },
+{ date: "2026-04-06", label: "Semaine 23" },
+{ date: "2026-04-13", label: "Semaine 24" },
+{ date: "2026-05-04", label: "Semaine 25" },
+{ date: "2026-05-11", label: "Semaine 26" },
+{ date: "2026-05-18", label: "Semaine 27" },
+{ date: "2026-05-25", label: "Semaine 28" },
+{ date: "2026-06-01", label: "Semaine 29" }
+];
+
+// Sujets de DS du vendredi (28 semaines de colle)
+const dsList = [
+"Physique", "SI", "Maths",
+"Français", "Physique", "SI", "Maths", "Anglais + Info",
+"Physique", "SI", "Maths", "ski","Français", "Physique",
+"SI", "Maths", "Anglais + Info", "Physique", "SI",
+"Maths", "Physique", "Français", "SI", "Maths",
+"Physique", "SI", "Info [10h]", "Maths", "Physique"
+];
+
+// Données des colles (structure : subject, prof, room, day, time, groups[semaine1, semaine2, ...])
+
+const slots = [
+
+// MATHS
+{ subject: "Maths", prof: "M. Jondreville", room: "K302", day: "Lundi", time: "16h-17h", groups: [4, 1, 10, 15, 2, 5, 12, 15, 6, 3, 16, 11, 8, 3, 14, 13, 6, 3, 10, 15, 8, 5, 12, 11, 2, 5, 14, 9, 11, 4] },
+{ subject: "Maths", prof: "M. Jondreville", room: "K302", day: "Lundi", time: "17h-18h", groups: [6, 5, 12, 9, 8, 7, 14, 11, 4, 7, 14, 9, 2, 7, 10, 11, 4, 7, 16, 9, 6, 1, 16, 15, 6, 1, 16, 13, 3, 6] },
+{ subject: "Maths", prof: "M. Gibaud", room: "K219", day: "Lundi", time: "18h-19h", groups: [10, 7, 2, 3, 4, 13, 2, 3, 16, 9, 4, 1, 14, 15, 4, 5, 10, 1, 8, 3, 10, 13, 2, 1, 12, 7, 6, 3, 13, 10] },
+{ subject: "Maths", prof: "M. Sarfati", room: "K12", day: "Mardi", time: "10h25-11h25", groups: [2, 15, 16, 7, 6, 1, 4, 13, 12, 5, 8, 13, 6, 13, 12, 3, 8, 15, 2, 7, 16, 3, 6, 7, 4, 15, 10, 5, 1, 2] },
+{ subject: "Maths", prof: "M. Sarfati", room: "K12", day: "Mardi", time: "11h25-12h25", groups: [16, 9, 4, 11, 14, 11, 10, 1, 2, 13, 6, 7, 10, 9, 2, 1, 14, 5, 12, 13, 12, 11, 8, 5, 10, 3, 2, 11, 16, 9] },
+{ subject: "Maths", prof: "M. Gibaud", room: "K218", day: "Mardi", time: "16h30-17h30", groups: [12, 11, 6, 13, 10, 9, 16, 9, 14, 15, 10, 15, 4, 1, 16, 7, 2, 9, 14, 1, 4, 7, 10, 9, 16, 9, 12, 15, 12, 11] },
+{ subject: "Maths", prof: "M. Gibaud", room: "K218", day: "Mardi", time: "17h30-18h30", groups: [8, 3, 14, 1, 12, 15, 6, 5, 8, 1, 2, 3, 16, 11, 6, 9, 16, 13, 6, 11, 14, 9, 4, 13, 8, 11, 8, 7, 6, 3] },
+{ subject: "Maths", prof: "M. Gibaud", room: "K219", day: "Mercredi", time: "17h-18h", groups: [14, 13, 8, 5, 16, 3, 8, 7, 10, 11, 12, 5, 12, 5, 8, 15, 12, 11, 4, 5, 2, 15, 14, 3, 14, 13, 4, 1, 14, 13] },
+
+// PHYSIQUE
+{ subject: "Physique", prof: "Mme Crosnier", room: "K301", day: "Lundi", time: "16h-17h", groups: [8, 3, 14, 13, 4, 3, 16, 9, 8, 1, 10, 9, 4, 5, 16, 11, 2, 1, 14, 11, 6, 7, 10, 13, 8, 7, 12, 13, 3, 14] },
+{ subject: "Physique", prof: "Mme Crosnier", room: "K301", day: "Lundi", time: "17h-18h", groups: [4, 7, 10, 15, 6, 5, 12, 15, 6, 3, 16, 11, 8, 1, 14, 13, 6, 3, 10, 15, 2, 5, 12, 11, 2, 5, 14, 9, 7, 10] },
+{ subject: "Physique", prof: "M. Pohon", room: "K07", day: "Mardi", time: "10h25-11h25", groups: [16, 9, 4, 11, 14, 11, 10, 1, 2, 13, 6, 7, 10, 9, 2, 1, 14, 5, 12, 13, 12, 11, 8, 5, 10, 3, 2, 11, 9, 4] },
+{ subject: "Physique", prof: "M. Pohon", room: "K07", day: "Mardi", time: "11h25-12h25", groups: [2, 15, 16, 7, 8, 1, 4, 13, 12, 5, 14, 13, 6, 13, 12, 3, 8, 15, 2, 7, 16, 3, 6, 7, 4, 15, 10, 5, 15, 16] },
+{ subject: "Physique", prof: "M. Mézenge", room: "Labo", day: "Mardi", time: "16h30-17h30", groups: [14, 1, 12, 1, 2, 7, 6, 5, 4, 9, 2, 3, 14, 11, 4, 9, 10, 13, 16, 3, 8, 9, 2, 15, 6, 1, 16, 7, 1, 12] },
+{ subject: "Physique", prof: "M. Mézenge", room: "Labo", day: "Mardi", time: "17h30-18h30", groups: [6, 5, 8, 9, 10, 13, 8, 11, 14, 15, 12, 15, 12, 3, 8, 7, 12, 7, 8, 5, 4, 1, 16, 3, 14, 9, 6, 15, 5, 8] },
+{ subject: "Physique", prof: "M. Causse", room: "L129", day: "Mercredi", time: "17h-18h", groups: [10, 11, 6, 3, 12, 15, 14, 3, 16, 7, 4, 1, 2, 15, 10, 5, 16, 9, 6, 1, 10, 13, 4, 1, 16, 11, 8, 3, 11, 6] },
+{ subject: "Physique", prof: "M. Causse", room: "L129", day: "Mercredi", time: "18h-19h", groups: [12, 13, 2, 5, 16, 9, 2, 7, 10, 11, 8, 5, 16, 7, 6, 15, 4, 11, 4, 9, 14, 15, 14, 9, 12, 13, 4, 1, 13, 2] },
+
+// SI
+{ subject: "SI", prof: "M. Onillon", room: "K14", day: "Lundi", time: "16h-17h", groups: [1, 2, 13, 14, 1, 2, 13, 14, 1, 2, 13, 14, 1, 2, 13, 14, 1, 2, 13, 14, 1, 2, 13, 14, 1, 2, 13, 14, 2, 13] },
+{ subject: "SI", prof: "M. Onillon", room: "K14", day: "Lundi", time: "17h-18h", groups: [3, 4, 15, 16, 3, 4, 15, 16, 3, 4, 15, 16, 3, 4, 15, 16, 3, 4, 15, 16, 3, 4, 15, 16, 3, 4, 15, 16, 4, 15] },
+{ subject: "SI", prof: "M. Ménard", room: "K12", day: "Lundi", time: "18h-19h", groups: [13, 14, 9, 10, 5, 6, 1, 2, 13, 14, 9, 10, 5, 6, 1, 2, 13, 14, 9, 10, 5, 6, 1, 2, 13, 14, 9, 10, 14, 9] },
+{ subject: "SI", prof: "M. Ménard", room: "K12", day: "Mardi", time: "18h-19h", groups: [15, 16, 11, 12, 7, 8, 3, 4, 15, 16, 11, 12, 7, 8, 3, 4, 15, 16, 11, 12, 7, 8, 3, 4, 15, 16, 11, 12, 16, 11] },
+{ subject: "SI", prof: "M. Onillon", room: "K12", day: "Mercredi", time: "17h-18h", groups: [9, 10, 5, 6, 9, 10, 5, 6, 9, 10, 5, 6, 9, 10, 5, 6, 9, 10, 5, 6, 9, 10, 5, 6, 9, 10, 7, 6, 10, 5] },
+{ subject: "SI", prof: "M. Onillon", room: "K12", day: "Mercredi", time: "18h-19h", groups: [11, 12, 7, 8, 11, 12, 7, 8, 11, 12, 7, 8, 11, 12, 7, 8, 11, 12, 7, 8, 11, 12, 7, 8, 11, 12, 5, 8, 12, 7] },
+{ subject: "SI", prof: "M. Houot", room: "K16", day: "Jeudi", time: "16h30-17h30", groups: [5, 6, 1, 2, 13, 14, 9, 10, 5, 6, 1, 2, 13, 14, 9, 10, 5, 6, 1, 2, 13, 14, 9, 10, 5, 6, 1, 2, 6, 1] },
+{ subject: "SI", prof: "M. Houot", room: "K16", day: "Jeudi", time: "17h30-18h30", groups: [7, 8, 3, 4, 15, 16, 11, 12, 7, 8, 3, 4, 15, 16, 11, 12, 7, 8, 3, 4, 15, 16, 11, 12, 7, 8, 3, 4, 8, 3] },
+
+// ANGLAIS
+{ subject: "Anglais", prof: "Mme Guillier", room: "K304", day: "Mardi", time: "10h30-11h30", groups: [1, 6, 3, 4, 7, 12, 9, 8, 1, 16, 13, 4, 7, 14, 9, 12, 15, 16, 1, 6, 3, 10, 15, 16, 1, 8, 9, 12, 6, 3] },
+{ subject: "Anglais", prof: "Mme Guillier", room: "K304", day: "Mardi", time: "11h30-12h30", groups: [3, 8, 9, 12, 13, 16, 1, 14, 3, 4, 15, 12, 9, 6, 1, 16, 7, 4, 3, 8, 9, 4, 7, 12, 11, 14, 1, 4, 8, 9] },
+{ subject: "Anglais", prof: "Mme Guillier", room: "K304", day: "Mardi", time: "12h30-13h30", groups: [9, 14, 1, 16, 15, 4, 3, 6, 9, 12, 7, 16, 1, 8, 3, 4, 13, 12, 9, 14, 1, 16, 13, 4, 3, 6, 3, 16, 14, 1] },
+{ subject: "Anglais", prof: "Mme Guillier", room: "K304", day: "Mardi", time: "14h30-15h30", groups: [7, 4, 13, 10, 5, 6, 15, 12, 7, 2, 11, 2, 11, 16, 15, 14, 11, 10, 7, 4, 13, 12, 11, 2, 15, 16, 13, 2, 4, 13] },
+{ subject: "Anglais", prof: "Mme Guillier", room: "K304", day: "Mardi", time: "15h30-16h30", groups: [5, 2, 11, 14, 9, 10, 5, 10, 11, 6, 1, 14, 15, 2, 11, 10, 3, 6, 5, 10, 11, 2, 1, 8, 5, 10, 11, 6, 2, 11] },
+{ subject: "Anglais", prof: "Mme Gruber-Magitot", room: "K301", day: "Mardi", time: "18h-19h", groups: [11, 12, 5, 2, 1, 14, 11, 16, 5, 8, 3, 10, 13, 4, 7, 6, 5, 8, 13, 2, 15, 14, 9, 10, 7, 2, 5, 10, 12, 5] },
+{ subject: "Anglais", prof: "M. Babadjanian", room: "L203", day: "Jeudi", time: "17h-18h", groups: [13, 10, 15, 8, 3, 2, 7, 2, 13, 10, 9, 8, 3, 12, 5, 8, 1, 2, 11, 12, 5, 8, 3, 6, 9, 4, 7, 14, 10, 15] },
+{ subject: "Anglais", prof: "M. Babadjanian", room: "L203", day: "Jeudi", time: "18h-19h", groups: [15, 16, 7, 6, 11, 8, 13, 4, 15, 14, 5, 6, 5, 10, 13, 2, 9, 14, 15, 16, 7, 6, 5, 14, 13, 12, 15, 8, 16, 7] },
+];
+// Décaler les colles pour la semaine 12 (SKI)
+slots.forEach(slot => {
+slot.groups.splice(11, 0, 0); // Insérer 0 à l'index 12
+});
+
+
+function formatDate(dateStr) {
+const options = { day: 'numeric', month: 'long' };
+const date = new Date(dateStr);
+const friday = new Date(date);
+friday.setDate(date.getDate() + 4);
+return `Du lundi ${date.toLocaleDateString('fr-FR', options)} au vendredi ${friday.toLocaleDateString('fr-FR', options)}`;
+}
+
+
+
+function init() {
+        const groupSelect = document.getElementById('groupSelect');
+        for (let i = 1; i <= 16; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = `Groupe ${i}`;
+            groupSelect.appendChild(opt);
+        }
+
+        const select = document.getElementById('weekSelect');
+        weeks.forEach((week, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerHTML = `${week.label} : ${formatDate(week.date)}`;
+            select.appendChild(opt);
+        });
+        updateDashboard();
+    }
+
+function updateDashboard() {
+const group = parseInt(document.getElementById('groupSelect').value);
+const weekIndex = parseInt(document.getElementById('weekSelect').value);
+
+const dsName = dsList[weekIndex] || "Aucun DS";
+document.getElementById('dsSubject').innerText = dsName;
+
+const container = document.getElementById('collesContainer');
+container.innerHTML = '';
+
+const myColles = slots.filter(slot => {
+return slot.groups[weekIndex] === group;
+});
+
+if (myColles.length === 0) {
+container.innerHTML = '<div class="empty-state">Aucune colle trouvée pour cette semaine.</div>';
+return;
+}
+
+const dayOrder = { "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5 };
+myColles.sort((a, b) => dayOrder[a.day] - dayOrder[b.day]);
+
+myColles.forEach(colle => {
+const card = document.createElement('div');
+card.className = 'colle-card';
+card.innerHTML = `
+<div class="subject">
+${colle.subject}
+<span style="font-size:0.8em; opacity:0.5">#${weekIndex+1}</span>
+</div>
+<div class="prof">${colle.prof}</div>
+<div class="details">
+<span class="tag time">🕒 ${colle.day} ${colle.time}</span>
+<span class="tag room">📍 ${colle.room}</span>
+</div>
+`;
+container.appendChild(card);
+});
+}
+
+init();
+</script>
+
+</body>
+</html>
