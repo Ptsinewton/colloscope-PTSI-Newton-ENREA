@@ -259,7 +259,30 @@ return `Du lundi ${date.toLocaleDateString('fr-FR', options)} au vendredi ${frid
 
 
 
-function init() {
+    function getCurrentWeekIndex() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let currentIndex = 0;
+        for (let i = 0; i < weeks.length; i++) {
+            const monday = new Date(weeks[i].date);
+            monday.setHours(0, 0, 0, 0);
+            
+            let nextMonday = null;
+            if (i + 1 < weeks.length) {
+                nextMonday = new Date(weeks[i + 1].date);
+                nextMonday.setHours(0, 0, 0, 0);
+            }
+            
+            if (today >= monday && (!nextMonday || today < nextMonday)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        return currentIndex;
+    }
+
+    function init() {
         const groupSelect = document.getElementById('groupSelect');
         for (let i = 1; i <= 16; i++) {
             const opt = document.createElement('option');
@@ -275,8 +298,14 @@ function init() {
             opt.innerHTML = `${week.label} : ${formatDate(week.date)}`;
             select.appendChild(opt);
         });
+        
+        // Sélectionne la semaine actuelle
+        const currentWeek = getCurrentWeekIndex();
+        select.value = currentWeek;
+        
         updateDashboard();
     }
+
 
 function updateDashboard() {
 const group = parseInt(document.getElementById('groupSelect').value);
@@ -323,3 +352,4 @@ init();
 
 </body>
 </html>
+
